@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Systems Catalog Explorer</title>
+<meta name="description" content="Browse a sample systems catalog and follow its linked tools, use cases, and data flows.">
+<style>
+  :root {
+    --bg: #f7f8fa; --surface: #ffffff; --border: #e2e5ea; --text: #1a1d23; --text-dim: #6b7280;
+    --accent: #2563eb; --accent-dim: #dbeafe; --radius: 10px;
+    --io-in: #16a34a; --io-in-dim: #dcfce7; --io-out: #d97706; --io-out-dim: #fef3c7;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #0f1115; --surface: #181b21; --border: #2a2e37; --text: #e5e7eb; --text-dim: #9aa1ad; --accent: #60a5fa; --accent-dim: #1e3a5f; --io-in: #4ade80; --io-in-dim: #14361f; --io-out: #fbbf24; --io-out-dim: #3a2c0d; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; }
+  .wrap { max-width: 820px; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+  h1 { font-size: 1.5rem; margin: 0 0 .25rem; }
+  .sub { color: var(--text-dim); font-size: .92rem; margin: 0 0 1rem; }
+  .privacy-note { font-size: .78rem; color: var(--text-dim); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: .6rem .8rem; margin-bottom: 1.25rem; }
+
+  nav.crumbs { margin-bottom: 1.25rem; font-size: .88rem; }
+  nav.crumbs a { color: var(--accent); text-decoration: none; cursor: pointer; }
+  nav.crumbs a:hover { text-decoration: underline; }
+  nav.top { display: flex; gap: 1rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: .8rem; }
+  nav.top a { color: var(--text-dim); text-decoration: none; font-size: .88rem; cursor: pointer; }
+  nav.top a.active, nav.top a:hover { color: var(--accent); }
+
+  input[type=search] { width: 100%; padding: .6rem .8rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); color: var(--text); font-size: .95rem; margin-bottom: 1rem; }
+
+  ul.entities { list-style: none; margin: 0; padding: 0; }
+  li.entity { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: .65rem .9rem; margin-bottom: .5rem; }
+  li.entity a { color: var(--accent); text-decoration: none; font-weight: 600; font-size: .95rem; cursor: pointer; }
+  li.entity a:hover { text-decoration: underline; }
+  .tag { display: inline-block; background: var(--bg); border: 1px solid var(--border); border-radius: 999px; padding: .1rem .55rem; font-size: .74rem; color: var(--text-dim); margin-left: .4rem; }
+  .tag.io-input { background: var(--io-in-dim); color: var(--io-in); border-color: transparent; }
+  .tag.io-output { background: var(--io-out-dim); color: var(--io-out); border-color: transparent; }
+  .count { color: var(--text-dim); font-weight: 400; font-size: .85rem; }
+  .section { margin-top: 1.5rem; }
+  .section h2 { font-size: 1.02rem; border-bottom: 2px solid var(--border); padding-bottom: .35rem; margin-bottom: .6rem; }
+  .empty { color: var(--text-dim); font-style: italic; font-size: .88rem; padding: .3rem 0; }
+  footer { margin-top: 2.5rem; text-align: center; font-size: .78rem; color: var(--text-dim); }
+  footer a { color: var(--text-dim); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🗺️ Systems Catalog Explorer</h1>
+  <p class="sub">Browse a sample systems catalog and follow its linked tools, use cases, and data flows.</p>
+  <div class="privacy-note">This is a generic example catalog for demo purposes.</div>
+
+  <nav class="top" id="top-nav">
+    <a data-route="systems">Systems</a>
+    <a data-route="tools">Tools</a>
+    <a data-route="use-cases">Use Cases</a>
+    <a data-route="data">Data</a>
+  </nav>
+
+  <div id="app"></div>
+
+  <footer>
+    Public demo — generic sample data. Source: <a href="https://github.com/kareembullard/systems-catalog-explorer-web" target="_blank" rel="noopener">systems-catalog-explorer-web</a>
+  </footer>
+</div>
+
+<script>
+// Generic example catalog — not anyone's real personal systems.
+const SYSTEMS = [
+  {
+    id: "email-management", name: "Email Management System",
+    tools: ["Gmail", "Outlook"],
+    useCases: ["Inbox Triage", "Newsletter Management"],
+    data: [{ name: "Email Thread", io: "Input" }, { name: "Draft", io: "Output" }],
+  },
+  {
+    id: "content-publishing", name: "Content Publishing System",
+    tools: ["WordPress", "Canva"],
+    useCases: ["Content Creation", "Post Scheduling"],
+    data: [{ name: "Blog Post", io: "Input" }, { name: "Published Post", io: "Output" }],
+  },
+  {
+    id: "task-management", name: "Task Management System",
+    tools: ["Todoist", "Trello"],
+    useCases: ["Task Tracking", "Project Planning"],
+    data: [{ name: "Task", io: "Input" }, { name: "Completion Report", io: "Output" }],
+  },
+  {
+    id: "customer-support", name: "Customer Support System",
+    tools: ["Zendesk", "Slack"],
+    useCases: ["Ticket Triage", "Customer Follow-up"],
+    data: [{ name: "Support Ticket", io: "Input" }, { name: "Resolution Log", io: "Output" }],
+  },
+  {
+    id: "financial-tracking", name: "Financial Tracking System",
+    tools: ["Excel", "QuickBooks"],
+    useCases: ["Expense Tracking", "Budgeting"],
+    data: [{ name: "Receipt", io: "Input" }, { name: "Financial Report", io: "Output" }],
+  },
+  {
+    id: "social-media", name: "Social Media Management System",
+    tools: ["Buffer", "Instagram"],
+    useCases: ["Post Scheduling", "Engagement Tracking"],
+    data: [{ name: "Social Post", io: "Input" }, { name: "Engagement Metric", io: "Output" }],
+  },
+  {
+    id: "meetings", name: "Meeting & Collaboration System",
+    tools: ["Zoom", "Google Calendar"],
+    useCases: ["Virtual Meetings", "Scheduling"],
+    data: [{ name: "Meeting Invite", io: "Input" }, { name: "Meeting Recording", io: "Output" }],
+  },
+  {
+    id: "documents", name: "Document Management System",
+    tools: ["Google Drive", "Notion"],
+    useCases: ["File Organization", "Version Control"],
+    data: [{ name: "Document", io: "Input" }, { name: "Indexed Document", io: "Output" }],
+  },
+  // A couple of "not yet linked" systems, matching the original app's real-world
+  // behavior where many catalog entries exist before being fleshed out.
+  { id: "wellness", name: "Personal Wellness System", tools: [], useCases: [], data: [] },
+  { id: "learning", name: "Learning & Development System", tools: [], useCases: [], data: [] },
+];
+
+function distinctTools() { return [...new Set(SYSTEMS.flatMap(s => s.tools))].sort(); }
+function distinctUseCases() { return [...new Set(SYSTEMS.flatMap(s => s.useCases))].sort(); }
+function distinctData() {
+  const map = new Map();
+  SYSTEMS.flatMap(s => s.data).forEach(d => map.set(d.name, d.io));
+  return [...map.entries()].map(([name, io]) => ({ name, io })).sort((a, b) => a.name.localeCompare(b.name));
+}
+
+function systemsUsingTool(tool) { return SYSTEMS.filter(s => s.tools.includes(tool)); }
+function systemsUsingUseCase(uc) { return SYSTEMS.filter(s => s.useCases.includes(uc)); }
+function systemsUsingData(name) { return SYSTEMS.filter(s => s.data.some(d => d.name === name)); }
+
+// --- Router ---
+const app = document.getElementById("app");
+const topNav = document.getElementById("top-nav");
+
+function parseRoute() {
+  const hash = location.hash.replace(/^#\/?/, "");
+  const parts = hash.split("/").filter(Boolean);
+  return parts.length ? parts : ["systems"];
+}
+
+function navLink(label, onClick) {
+  const a = document.createElement("a");
+  a.textContent = label;
+  a.addEventListener("click", onClick);
+  return a;
+}
+
+function tagHtml(text, extraClass) {
+  return `<span class="tag ${extraClass || ""}">${text}</span>`;
+}
+
+function render() {
+  const parts = parseRoute();
+  const route = parts[0];
+
+  [...topNav.children].forEach(a => a.classList.toggle("active", a.dataset.route === route));
+
+  if (route === "systems" && parts.length === 1) return renderSystemsList();
+  if (route === "system" && parts[1]) return renderSystemDetail(parts[1]);
+  if (route === "tools") return renderToolsList();
+  if (route === "use-cases") return renderUseCasesList();
+  if (route === "data") return renderDataList();
+  renderSystemsList();
+}
+
+function renderSystemsList() {
+  app.innerHTML = "";
+  const h1 = document.createElement("h2");
+  h1.innerHTML = `Systems <span class="count">(${SYSTEMS.length})</span>`;
+  app.appendChild(h1);
+
+  const search = document.createElement("input");
+  search.type = "search";
+  search.placeholder = "Search systems…";
+  app.appendChild(search);
+
+  const ul = document.createElement("ul");
+  ul.className = "entities";
+  app.appendChild(ul);
+
+  function draw() {
+    const q = search.value.trim().toLowerCase();
+    ul.innerHTML = "";
+    SYSTEMS.filter(s => !q || s.name.toLowerCase().includes(q)).forEach(s => {
+      const li = document.createElement("li");
+      li.className = "entity";
+      const a = document.createElement("a");
+      a.textContent = s.name;
+      a.addEventListener("click", () => { location.hash = `#/system/${s.id}`; });
+      li.appendChild(a);
+      li.insertAdjacentHTML("beforeend",
+        tagHtml(`${s.tools.length} tools`) + tagHtml(`${s.useCases.length} use cases`) + tagHtml(`${s.data.length} data`)
+      );
+      ul.appendChild(li);
+    });
+  }
+  search.addEventListener("input", draw);
+  draw();
+}
+
+function renderSystemDetail(id) {
+  const system = SYSTEMS.find(s => s.id === id);
+  app.innerHTML = "";
+  if (!system) {
+    app.innerHTML = `<p class="empty">System not found.</p>`;
+    return;
+  }
+
+  const crumbs = document.createElement("nav");
+  crumbs.className = "crumbs";
+  const back = document.createElement("a");
+  back.textContent = "← Systems";
+  back.addEventListener("click", () => { location.hash = "#/systems"; });
+  crumbs.appendChild(back);
+  app.appendChild(crumbs);
+
+  const h2 = document.createElement("h2");
+  h2.textContent = system.name;
+  app.appendChild(h2);
+
+  function section(title, items, formatter) {
+    const div = document.createElement("div");
+    div.className = "section";
+    div.innerHTML = `<h2>${title} (${items.length})</h2>`;
+    if (!items.length) {
+      div.innerHTML += `<p class="empty">None linked.</p>`;
+    } else {
+      const ul = document.createElement("ul");
+      ul.className = "entities";
+      items.forEach(item => {
+        const li = document.createElement("li");
+        li.className = "entity";
+        li.innerHTML = formatter(item);
+        ul.appendChild(li);
+      });
+      div.appendChild(ul);
+    }
+    app.appendChild(div);
+  }
+
+  section("Tools", system.tools, t => t);
+  section("Use Cases", system.useCases, uc => uc);
+  section("Data", system.data, d => `${d.name}${tagHtml(d.io, d.io === "Input" ? "io-input" : "io-output")}`);
+}
+
+function renderToolsList() {
+  app.innerHTML = "";
+  const tools = distinctTools();
+  const h2 = document.createElement("h2");
+  h2.innerHTML = `Tools <span class="count">(${tools.length})</span>`;
+  app.appendChild(h2);
+  const ul = document.createElement("ul");
+  ul.className = "entities";
+  tools.forEach(t => {
+    const li = document.createElement("li");
+    li.className = "entity";
+    const usedBy = systemsUsingTool(t).map(s => s.name).join(", ");
+    li.innerHTML = `${t}<div class="empty" style="margin-top:.3rem;">Used by: ${usedBy}</div>`;
+    ul.appendChild(li);
+  });
+  app.appendChild(ul);
+}
+
+function renderUseCasesList() {
+  app.innerHTML = "";
+  const items = distinctUseCases();
+  const h2 = document.createElement("h2");
+  h2.innerHTML = `Use Cases <span class="count">(${items.length})</span>`;
+  app.appendChild(h2);
+  const ul = document.createElement("ul");
+  ul.className = "entities";
+  items.forEach(uc => {
+    const li = document.createElement("li");
+    li.className = "entity";
+    const usedBy = systemsUsingUseCase(uc).map(s => s.name).join(", ");
+    li.innerHTML = `${uc}<div class="empty" style="margin-top:.3rem;">Used by: ${usedBy}</div>`;
+    ul.appendChild(li);
+  });
+  app.appendChild(ul);
+}
+
+function renderDataList() {
+  app.innerHTML = "";
+  const items = distinctData();
+  const h2 = document.createElement("h2");
+  h2.innerHTML = `Data <span class="count">(${items.length})</span>`;
+  app.appendChild(h2);
+  const ul = document.createElement("ul");
+  ul.className = "entities";
+  items.forEach(d => {
+    const li = document.createElement("li");
+    li.className = "entity";
+    const usedBy = systemsUsingData(d.name).map(s => s.name).join(", ");
+    li.innerHTML = `${d.name}${tagHtml(d.io, d.io === "Input" ? "io-input" : "io-output")}<div class="empty" style="margin-top:.3rem;">Used by: ${usedBy}</div>`;
+    ul.appendChild(li);
+  });
+  app.appendChild(ul);
+}
+
+[...topNav.children].forEach(a => {
+  a.addEventListener("click", () => { location.hash = "#/" + a.dataset.route; });
+});
+
+window.addEventListener("hashchange", render);
+render();
+</script>
+</body>
+</html>
