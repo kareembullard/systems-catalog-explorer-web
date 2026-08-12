@@ -67,54 +67,74 @@
 
 <script>
 // Generic example catalog — not anyone's real personal systems.
+// Tools, use cases, and data names are deliberately reused across systems so the
+// cross-reference views (Tools/Use Cases/Data) have something real to show.
 const SYSTEMS = [
   {
     id: "email-management", name: "Email Management System",
-    tools: ["Gmail", "Outlook"],
-    useCases: ["Inbox Triage", "Newsletter Management"],
-    data: [{ name: "Email Thread", io: "Input" }, { name: "Draft", io: "Output" }],
+    tools: ["Gmail", "Outlook", "Zapier"],
+    useCases: ["Inbox Triage", "Newsletter Management", "Automated Follow-up"],
+    data: [{ name: "Email Thread", io: "Input" }, { name: "Draft", io: "Output" }, { name: "Contact Record", io: "Output" }],
   },
   {
     id: "content-publishing", name: "Content Publishing System",
-    tools: ["WordPress", "Canva"],
-    useCases: ["Content Creation", "Post Scheduling"],
-    data: [{ name: "Blog Post", io: "Input" }, { name: "Published Post", io: "Output" }],
+    tools: ["WordPress", "Canva", "Buffer"],
+    useCases: ["Content Creation", "Post Scheduling", "Brand Asset Reuse"],
+    data: [{ name: "Blog Post", io: "Input" }, { name: "Published Post", io: "Output" }, { name: "Brand Asset", io: "Input" }],
   },
   {
     id: "task-management", name: "Task Management System",
-    tools: ["Todoist", "Trello"],
-    useCases: ["Task Tracking", "Project Planning"],
-    data: [{ name: "Task", io: "Input" }, { name: "Completion Report", io: "Output" }],
+    tools: ["Todoist", "Trello", "Zapier"],
+    useCases: ["Task Tracking", "Project Planning", "Automated Follow-up"],
+    data: [{ name: "Task", io: "Input" }, { name: "Completion Report", io: "Output" }, { name: "Project Plan", io: "Input" }],
   },
   {
     id: "customer-support", name: "Customer Support System",
-    tools: ["Zendesk", "Slack"],
-    useCases: ["Ticket Triage", "Customer Follow-up"],
-    data: [{ name: "Support Ticket", io: "Input" }, { name: "Resolution Log", io: "Output" }],
+    tools: ["Zendesk", "Slack", "Zapier"],
+    useCases: ["Ticket Triage", "Customer Follow-up", "Automated Follow-up"],
+    data: [{ name: "Support Ticket", io: "Input" }, { name: "Resolution Log", io: "Output" }, { name: "Contact Record", io: "Input" }],
   },
   {
     id: "financial-tracking", name: "Financial Tracking System",
     tools: ["Excel", "QuickBooks"],
-    useCases: ["Expense Tracking", "Budgeting"],
-    data: [{ name: "Receipt", io: "Input" }, { name: "Financial Report", io: "Output" }],
+    useCases: ["Expense Tracking", "Budgeting", "Financial Reporting"],
+    data: [{ name: "Receipt", io: "Input" }, { name: "Financial Report", io: "Output" }, { name: "Budget", io: "Input" }],
   },
   {
     id: "social-media", name: "Social Media Management System",
-    tools: ["Buffer", "Instagram"],
-    useCases: ["Post Scheduling", "Engagement Tracking"],
-    data: [{ name: "Social Post", io: "Input" }, { name: "Engagement Metric", io: "Output" }],
+    tools: ["Buffer", "Instagram", "Canva"],
+    useCases: ["Post Scheduling", "Engagement Tracking", "Brand Asset Reuse"],
+    data: [{ name: "Social Post", io: "Input" }, { name: "Engagement Metric", io: "Output" }, { name: "Brand Asset", io: "Input" }],
   },
   {
     id: "meetings", name: "Meeting & Collaboration System",
-    tools: ["Zoom", "Google Calendar"],
-    useCases: ["Virtual Meetings", "Scheduling"],
-    data: [{ name: "Meeting Invite", io: "Input" }, { name: "Meeting Recording", io: "Output" }],
+    tools: ["Zoom", "Google Calendar", "Slack"],
+    useCases: ["Virtual Meetings", "Scheduling", "Customer Follow-up"],
+    data: [{ name: "Meeting Invite", io: "Input" }, { name: "Meeting Recording", io: "Output" }, { name: "Meeting Notes", io: "Output" }],
   },
   {
     id: "documents", name: "Document Management System",
     tools: ["Google Drive", "Notion"],
-    useCases: ["File Organization", "Version Control"],
-    data: [{ name: "Document", io: "Input" }, { name: "Indexed Document", io: "Output" }],
+    useCases: ["File Organization", "Version Control", "Financial Reporting"],
+    data: [{ name: "Document", io: "Input" }, { name: "Indexed Document", io: "Output" }, { name: "Financial Report", io: "Input" }],
+  },
+  {
+    id: "sales-pipeline", name: "Sales Pipeline System",
+    tools: ["Zendesk", "Excel", "Zapier"],
+    useCases: ["Lead Tracking", "Automated Follow-up", "Financial Reporting"],
+    data: [{ name: "Lead Record", io: "Input" }, { name: "Contact Record", io: "Output" }, { name: "Financial Report", io: "Output" }],
+  },
+  {
+    id: "hr-onboarding", name: "HR Onboarding System",
+    tools: ["Notion", "Google Calendar", "Google Drive"],
+    useCases: ["Scheduling", "File Organization", "Task Tracking"],
+    data: [{ name: "Onboarding Checklist", io: "Input" }, { name: "Document", io: "Output" }, { name: "Task", io: "Output" }],
+  },
+  {
+    id: "personal-finance", name: "Personal Finance System",
+    tools: ["Excel", "QuickBooks"],
+    useCases: ["Budgeting", "Expense Tracking"],
+    data: [{ name: "Receipt", io: "Input" }, { name: "Budget", io: "Output" }],
   },
   // A couple of "not yet linked" systems, matching the original app's real-world
   // behavior where many catalog entries exist before being fleshed out.
@@ -162,10 +182,13 @@ function render() {
   [...topNav.children].forEach(a => a.classList.toggle("active", a.dataset.route === route));
 
   if (route === "systems" && parts.length === 1) return renderSystemsList();
-  if (route === "system" && parts[1]) return renderSystemDetail(parts[1]);
-  if (route === "tools") return renderToolsList();
-  if (route === "use-cases") return renderUseCasesList();
-  if (route === "data") return renderDataList();
+  if (route === "system" && parts[1]) return renderSystemDetail(decodeURIComponent(parts[1]));
+  if (route === "tools" && parts.length === 1) return renderToolsList();
+  if (route === "tool" && parts[1]) return renderXrefDetail("Tool", decodeURIComponent(parts[1]), systemsUsingTool);
+  if (route === "use-cases" && parts.length === 1) return renderUseCasesList();
+  if (route === "use-case" && parts[1]) return renderXrefDetail("Use Case", decodeURIComponent(parts[1]), systemsUsingUseCase);
+  if (route === "data" && parts.length === 1) return renderDataList();
+  if (route === "datum" && parts[1]) return renderXrefDetail("Data", decodeURIComponent(parts[1]), systemsUsingData);
   renderSystemsList();
 }
 
@@ -224,7 +247,7 @@ function renderSystemDetail(id) {
   h2.textContent = system.name;
   app.appendChild(h2);
 
-  function section(title, items, formatter) {
+  function section(title, items, formatter, hrefFor) {
     const div = document.createElement("div");
     div.className = "section";
     div.innerHTML = `<h2>${title} (${items.length})</h2>`;
@@ -236,7 +259,10 @@ function renderSystemDetail(id) {
       items.forEach(item => {
         const li = document.createElement("li");
         li.className = "entity";
-        li.innerHTML = formatter(item);
+        const a = document.createElement("a");
+        a.innerHTML = formatter(item);
+        a.addEventListener("click", () => { location.hash = hrefFor(item); });
+        li.appendChild(a);
         ul.appendChild(li);
       });
       div.appendChild(ul);
@@ -244,63 +270,100 @@ function renderSystemDetail(id) {
     app.appendChild(div);
   }
 
-  section("Tools", system.tools, t => t);
-  section("Use Cases", system.useCases, uc => uc);
-  section("Data", system.data, d => `${d.name}${tagHtml(d.io, d.io === "Input" ? "io-input" : "io-output")}`);
+  section("Tools", system.tools, t => t, t => `#/tool/${encodeURIComponent(t)}`);
+  section("Use Cases", system.useCases, uc => uc, uc => `#/use-case/${encodeURIComponent(uc)}`);
+  section("Data", system.data, d => `${d.name}${tagHtml(d.io, d.io === "Input" ? "io-input" : "io-output")}`, d => `#/datum/${encodeURIComponent(d.name)}`);
+}
+
+function renderXrefDetail(kind, name, systemsFinder) {
+  app.innerHTML = "";
+  const crumbs = document.createElement("nav");
+  crumbs.className = "crumbs";
+  const routeMap = { Tool: "tools", "Use Case": "use-cases", Data: "data" };
+  const back = document.createElement("a");
+  back.textContent = `← ${kind}s`;
+  back.addEventListener("click", () => { location.hash = `#/${routeMap[kind]}`; });
+  crumbs.appendChild(back);
+  app.appendChild(crumbs);
+
+  const h2 = document.createElement("h2");
+  h2.textContent = name;
+  app.appendChild(h2);
+
+  const systems = systemsFinder(name);
+  const div = document.createElement("div");
+  div.className = "section";
+  div.innerHTML = `<h2>Used by (${systems.length})</h2>`;
+  if (!systems.length) {
+    div.innerHTML += `<p class="empty">Not currently linked to any system.</p>`;
+  } else {
+    const ul = document.createElement("ul");
+    ul.className = "entities";
+    systems.forEach(s => {
+      const li = document.createElement("li");
+      li.className = "entity";
+      const a = document.createElement("a");
+      a.textContent = s.name;
+      a.addEventListener("click", () => { location.hash = `#/system/${s.id}`; });
+      li.appendChild(a);
+      ul.appendChild(li);
+    });
+    div.appendChild(ul);
+  }
+  app.appendChild(div);
+}
+
+function usedByLine(systems) {
+  const div = document.createElement("div");
+  div.className = "empty";
+  div.style.marginTop = ".3rem";
+  if (!systems.length) {
+    div.textContent = "Not currently linked to any system.";
+    return div;
+  }
+  div.appendChild(document.createTextNode("Used by: "));
+  systems.forEach((s, i) => {
+    const a = document.createElement("a");
+    a.textContent = s.name;
+    a.style.color = "var(--accent)";
+    a.style.cursor = "pointer";
+    a.addEventListener("click", (e) => { e.stopPropagation(); location.hash = `#/system/${s.id}`; });
+    div.appendChild(a);
+    if (i < systems.length - 1) div.appendChild(document.createTextNode(", "));
+  });
+  return div;
+}
+
+function xrefList(kind, items, labelFor, hrefFor, systemsFinderFor) {
+  app.innerHTML = "";
+  const h2 = document.createElement("h2");
+  h2.innerHTML = `${kind} <span class="count">(${items.length})</span>`;
+  app.appendChild(h2);
+  const ul = document.createElement("ul");
+  ul.className = "entities";
+  items.forEach(item => {
+    const li = document.createElement("li");
+    li.className = "entity";
+    const a = document.createElement("a");
+    a.innerHTML = labelFor(item);
+    a.addEventListener("click", () => { location.hash = hrefFor(item); });
+    li.appendChild(a);
+    li.appendChild(usedByLine(systemsFinderFor(item)));
+    ul.appendChild(li);
+  });
+  app.appendChild(ul);
 }
 
 function renderToolsList() {
-  app.innerHTML = "";
-  const tools = distinctTools();
-  const h2 = document.createElement("h2");
-  h2.innerHTML = `Tools <span class="count">(${tools.length})</span>`;
-  app.appendChild(h2);
-  const ul = document.createElement("ul");
-  ul.className = "entities";
-  tools.forEach(t => {
-    const li = document.createElement("li");
-    li.className = "entity";
-    const usedBy = systemsUsingTool(t).map(s => s.name).join(", ");
-    li.innerHTML = `${t}<div class="empty" style="margin-top:.3rem;">Used by: ${usedBy}</div>`;
-    ul.appendChild(li);
-  });
-  app.appendChild(ul);
+  xrefList("Tools", distinctTools(), t => t, t => `#/tool/${encodeURIComponent(t)}`, systemsUsingTool);
 }
 
 function renderUseCasesList() {
-  app.innerHTML = "";
-  const items = distinctUseCases();
-  const h2 = document.createElement("h2");
-  h2.innerHTML = `Use Cases <span class="count">(${items.length})</span>`;
-  app.appendChild(h2);
-  const ul = document.createElement("ul");
-  ul.className = "entities";
-  items.forEach(uc => {
-    const li = document.createElement("li");
-    li.className = "entity";
-    const usedBy = systemsUsingUseCase(uc).map(s => s.name).join(", ");
-    li.innerHTML = `${uc}<div class="empty" style="margin-top:.3rem;">Used by: ${usedBy}</div>`;
-    ul.appendChild(li);
-  });
-  app.appendChild(ul);
+  xrefList("Use Cases", distinctUseCases(), uc => uc, uc => `#/use-case/${encodeURIComponent(uc)}`, systemsUsingUseCase);
 }
 
 function renderDataList() {
-  app.innerHTML = "";
-  const items = distinctData();
-  const h2 = document.createElement("h2");
-  h2.innerHTML = `Data <span class="count">(${items.length})</span>`;
-  app.appendChild(h2);
-  const ul = document.createElement("ul");
-  ul.className = "entities";
-  items.forEach(d => {
-    const li = document.createElement("li");
-    li.className = "entity";
-    const usedBy = systemsUsingData(d.name).map(s => s.name).join(", ");
-    li.innerHTML = `${d.name}${tagHtml(d.io, d.io === "Input" ? "io-input" : "io-output")}<div class="empty" style="margin-top:.3rem;">Used by: ${usedBy}</div>`;
-    ul.appendChild(li);
-  });
-  app.appendChild(ul);
+  xrefList("Data", distinctData(), d => `${d.name}${tagHtml(d.io, d.io === "Input" ? "io-input" : "io-output")}`, d => `#/datum/${encodeURIComponent(d.name)}`, d => systemsUsingData(d.name));
 }
 
 [...topNav.children].forEach(a => {
