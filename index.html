@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Systems Catalog Explorer</title>
-<meta name="description" content="Browse a sample systems catalog and follow its linked tools, use cases, and data flows.">
+<meta name="description" content="Browse Kareem Bullard's personal systems catalog and follow its linked tools, use cases, and data flows.">
 <style>
   :root {
     --bg: #f7f8fa; --surface: #ffffff; --border: #e2e5ea; --text: #1a1d23; --text-dim: #6b7280;
@@ -48,8 +48,8 @@
 <body>
 <div class="wrap">
   <h1>🗺️ Systems Catalog Explorer</h1>
-  <p class="sub">Browse a sample systems catalog and follow its linked tools, use cases, and data flows.</p>
-  <div class="privacy-note">This is a generic example catalog for demo purposes.</div>
+  <p class="sub">Browse Kareem Bullard's personal systems catalog and follow its linked tools, use cases, and data flows.</p>
+  <div class="privacy-note">This is my real personal systems catalog, exported from my own Airtable workspace — not everyone's or a client's data. Many systems are cataloged but not yet fully linked to tools/use cases/data.</div>
 
   <nav class="top" id="top-nav">
     <a data-route="systems">Systems</a>
@@ -66,80 +66,80 @@
 </div>
 
 <script>
-// Generic example catalog — not anyone's real personal systems.
-// Tools, use cases, and data names are deliberately reused across systems so the
-// cross-reference views (Tools/Use Cases/Data) have something real to show.
+// Real personal systems catalog (Kareem Bullard) — exported from Airtable.
 const SYSTEMS = [
-  {
-    id: "email-management", name: "Email Management System",
-    tools: ["Gmail", "Outlook", "Zapier"],
-    useCases: ["Inbox Triage", "Newsletter Management", "Automated Follow-up"],
-    data: [{ name: "Email Thread", io: "Input" }, { name: "Draft", io: "Output" }, { name: "Contact Record", io: "Output" }],
-  },
-  {
-    id: "content-publishing", name: "Content Publishing System",
-    tools: ["WordPress", "Canva", "Buffer"],
-    useCases: ["Content Creation", "Post Scheduling", "Brand Asset Reuse"],
-    data: [{ name: "Blog Post", io: "Input" }, { name: "Published Post", io: "Output" }, { name: "Brand Asset", io: "Input" }],
-  },
-  {
-    id: "task-management", name: "Task Management System",
-    tools: ["Todoist", "Trello", "Zapier"],
-    useCases: ["Task Tracking", "Project Planning", "Automated Follow-up"],
-    data: [{ name: "Task", io: "Input" }, { name: "Completion Report", io: "Output" }, { name: "Project Plan", io: "Input" }],
-  },
-  {
-    id: "customer-support", name: "Customer Support System",
-    tools: ["Zendesk", "Slack", "Zapier"],
-    useCases: ["Ticket Triage", "Customer Follow-up", "Automated Follow-up"],
-    data: [{ name: "Support Ticket", io: "Input" }, { name: "Resolution Log", io: "Output" }, { name: "Contact Record", io: "Input" }],
-  },
-  {
-    id: "financial-tracking", name: "Financial Tracking System",
-    tools: ["Excel", "QuickBooks"],
-    useCases: ["Expense Tracking", "Budgeting", "Financial Reporting"],
-    data: [{ name: "Receipt", io: "Input" }, { name: "Financial Report", io: "Output" }, { name: "Budget", io: "Input" }],
-  },
-  {
-    id: "social-media", name: "Social Media Management System",
-    tools: ["Buffer", "Instagram", "Canva"],
-    useCases: ["Post Scheduling", "Engagement Tracking", "Brand Asset Reuse"],
-    data: [{ name: "Social Post", io: "Input" }, { name: "Engagement Metric", io: "Output" }, { name: "Brand Asset", io: "Input" }],
-  },
-  {
-    id: "meetings", name: "Meeting & Collaboration System",
-    tools: ["Zoom", "Google Calendar", "Slack"],
-    useCases: ["Virtual Meetings", "Scheduling", "Customer Follow-up"],
-    data: [{ name: "Meeting Invite", io: "Input" }, { name: "Meeting Recording", io: "Output" }, { name: "Meeting Notes", io: "Output" }],
-  },
-  {
-    id: "documents", name: "Document Management System",
-    tools: ["Google Drive", "Notion"],
-    useCases: ["File Organization", "Version Control", "Financial Reporting"],
-    data: [{ name: "Document", io: "Input" }, { name: "Indexed Document", io: "Output" }, { name: "Financial Report", io: "Input" }],
-  },
-  {
-    id: "sales-pipeline", name: "Sales Pipeline System",
-    tools: ["Zendesk", "Excel", "Zapier"],
-    useCases: ["Lead Tracking", "Automated Follow-up", "Financial Reporting"],
-    data: [{ name: "Lead Record", io: "Input" }, { name: "Contact Record", io: "Output" }, { name: "Financial Report", io: "Output" }],
-  },
-  {
-    id: "hr-onboarding", name: "HR Onboarding System",
-    tools: ["Notion", "Google Calendar", "Google Drive"],
-    useCases: ["Scheduling", "File Organization", "Task Tracking"],
-    data: [{ name: "Onboarding Checklist", io: "Input" }, { name: "Document", io: "Output" }, { name: "Task", io: "Output" }],
-  },
-  {
-    id: "personal-finance", name: "Personal Finance System",
-    tools: ["Excel", "QuickBooks"],
-    useCases: ["Budgeting", "Expense Tracking"],
-    data: [{ name: "Receipt", io: "Input" }, { name: "Budget", io: "Output" }],
-  },
-  // A couple of "not yet linked" systems, matching the original app's real-world
-  // behavior where many catalog entries exist before being fleshed out.
-  { id: "wellness", name: "Personal Wellness System", tools: [], useCases: [], data: [] },
-  { id: "learning", name: "Learning & Development System", tools: [], useCases: [], data: [] },
+  { id: "advertising-system", name: "Advertising System", tools: [], useCases: [], data: [] },
+  { id: "aptitude-profile-system", name: "Aptitude Profile System", tools: [], useCases: [], data: [] },
+  { id: "article-database-system", name: "Article Database System", tools: ["Airtable","Wordpress"], useCases: ["Research","Knowledge Management"], data: [{"name":"Research Summary","io":"Output"},{"name":"Research Data","io":"Input"},{"name":"Article Draft","io":"Input"},{"name":"Categorized Article","io":"Output"}] },
+  { id: "automation-system", name: "Automation System", tools: ["Make.Com","Airtable"], useCases: ["Automation","Data Processing"], data: [{"name":"Task Completion Data","io":""},{"name":"Processed Input","io":""},{"name":"Task Data","io":"Input"},{"name":"Data From Tool","io":"Input"},{"name":"Processed Data","io":"Output"},{"name":"Automated Task","io":"Output"}] },
+  { id: "behavior-management-system", name: "Behavior Management System", tools: [], useCases: [], data: [] },
+  { id: "blog-article-development-system", name: "Blog Article Development System", tools: [], useCases: [], data: [] },
+  { id: "blog-management-system", name: "Blog Management System", tools: ["Dreamweaver","Wordpress"], useCases: ["Content Creation","Post Scheduling"], data: [{"name":"Blog Post","io":"Input"},{"name":"Metadata","io":"Input"},{"name":"Seo Data","io":"Input"},{"name":"Published Post","io":"Output"}] },
+  { id: "brand-asset-management-system", name: "Brand Asset Management System", tools: [], useCases: [], data: [] },
+  { id: "brand-management-system", name: "Brand Management System", tools: [], useCases: [], data: [] },
+  { id: "brand-trust-system", name: "Brand Trust System", tools: [], useCases: [], data: [] },
+  { id: "business-networking-system", name: "Business Networking System", tools: [], useCases: [], data: [] },
+  { id: "business-sops-system", name: "Business SOPs System", tools: [], useCases: [], data: [] },
+  { id: "cardio-exercise-system", name: "Cardio Exercise System", tools: [], useCases: [], data: [] },
+  { id: "career-management-system", name: "Career Management System", tools: ["Microsoft Planner","TickTick"], useCases: ["Career Tracking","Goal Setting"], data: [{"name":"Career History","io":""},{"name":"Goal","io":""},{"name":"Career Data","io":"Input"},{"name":"Job Application","io":"Input"},{"name":"Career Progress Report","io":"Output"},{"name":"Goal Achievement","io":"Output"}] },
+  { id: "certification-and-skills-system", name: "Certification and Skills System", tools: [], useCases: [], data: [] },
+  { id: "chatgpt-for-fiverr-system", name: "Chatgpt For Fiverr System", tools: ["ChatGPT","Fiverr","Airtable"], useCases: ["Client Communication","Content Generation"], data: [{"name":"Client Brief","io":""},{"name":"Generated Content","io":"Output"},{"name":"Client Requirement","io":"Input"},{"name":"Content Brief","io":"Input"},{"name":"Communication Log","io":"Output"}] },
+  { id: "community-engagement-system", name: "Community Engagement System", tools: [], useCases: [], data: [] },
+  { id: "comprehensive-packages", name: "Comprehensive Packages", tools: [], useCases: [], data: [] },
+  { id: "confidence-building-system", name: "Confidence-building System", tools: [], useCases: [], data: [] },
+  { id: "content-management-system", name: "Content Management System", tools: ["Wordpress","Airtable"], useCases: ["Digital Asset Management","Content Distribution"], data: [{"name":"Digital Content","io":"Input"},{"name":"Distribution Data","io":""},{"name":"Version Control","io":"Output"},{"name":"Published Content","io":"Output"}] },
+  { id: "credit-score-system", name: "Credit Score System", tools: [], useCases: [], data: [] },
+  { id: "data-documents-and-content-index", name: "Data Documents And Content Index", tools: ["Airtable","Onedrive"], useCases: ["Data Categorization","Indexing"], data: [{"name":"Indexed Document","io":"Output"},{"name":"Metadata","io":"Input"},{"name":"Document","io":"Input"}] },
+  { id: "detoxing-system", name: "Detoxing System", tools: [], useCases: [], data: [] },
+  { id: "diet-planning-system", name: "Diet Planning System", tools: [], useCases: [], data: [] },
+  { id: "digital-presence-system", name: "Digital Presence System", tools: [], useCases: [], data: [] },
+  { id: "distrokid-release-system", name: "Distrokid Release System", tools: ["Distrokid","Airtable"], useCases: ["Music Publishing","Release Scheduling"], data: [{"name":"Release Schedule","io":""},{"name":"Music Track","io":"Input"},{"name":"Released Music","io":"Output"},{"name":"Royalty Tracking","io":"Output"}] },
+  { id: "document-management-system", name: "Document Management System", tools: [], useCases: [], data: [] },
+  { id: "e-commerce-management-system", name: "E-commerce Management System", tools: [], useCases: [], data: [] },
+  { id: "emotion-regulation-system", name: "Emotion Regulation System", tools: [], useCases: [], data: [] },
+  { id: "entertaining-management-system", name: "Entertaining Management System", tools: [], useCases: [], data: [] },
+  { id: "family-and-friends-social-system", name: "Family and Friends Social System", tools: [], useCases: [], data: [] },
+  { id: "financial-system", name: "Financial System", tools: ["Excel","Power Bi"], useCases: ["Expense Tracking","Financial Analysis"], data: [{"name":"Expense Data","io":""},{"name":"Invoice","io":"Input"},{"name":"Expense Report","io":"Output"},{"name":"Financial Statement","io":"Output"}] },
+  { id: "freelancing-system", name: "Freelancing System", tools: [], useCases: [], data: [] },
+  { id: "health-monitoring-system", name: "Health Monitoring System", tools: [], useCases: [], data: [] },
+  { id: "image-generation-system", name: "Image Generation System", tools: [], useCases: [], data: [] },
+  { id: "ip-assets-management-system", name: "IP Assets Management System", tools: [], useCases: [], data: [] },
+  { id: "ip-security-system", name: "IP Security System", tools: [], useCases: [], data: [] },
+  { id: "journaling-system", name: "Journaling System", tools: [], useCases: [], data: [] },
+  { id: "keto-and-pescatarian-diet-system", name: "Keto and Pescatarian Diet System", tools: [], useCases: [], data: [] },
+  { id: "lab-building-system", name: "Lab Building System", tools: [], useCases: [], data: [] },
+  { id: "linkedin-learning-system", name: "LinkedIn Learning System", tools: [], useCases: [], data: [] },
+  { id: "marketing-system", name: "Marketing System", tools: [], useCases: [], data: [] },
+  { id: "memoir-writing-system", name: "Memoir Writing System", tools: [], useCases: [], data: [] },
+  { id: "muscle-building-system", name: "Muscle Building System", tools: [], useCases: [], data: [] },
+  { id: "network-tracking-system", name: "Network Tracking System", tools: ["Whimsical","Airtable"], useCases: ["Relationship Management","Follow-Ups"], data: [{"name":"Networking Data","io":""},{"name":"Contact","io":""},{"name":"Networking Event","io":"Input"},{"name":"Contact Information","io":"Input"},{"name":"Follow-Up Reminder","io":"Output"},{"name":"Networking Summary","io":"Output"}] },
+  { id: "networking-events-management-system", name: "Networking Events Management System", tools: [], useCases: [], data: [] },
+  { id: "optimize-life-management-system", name: "Optimize Life Management System", tools: [], useCases: [], data: [] },
+  { id: "p90x-example", name: "P90X Example", tools: [], useCases: [], data: [] },
+  { id: "personal-accountability-system", name: "Personal Accountability System", tools: [], useCases: [], data: [] },
+  { id: "pmp-certification-study-system", name: "PMP Certification Study System", tools: [], useCases: [], data: [] },
+  { id: "production-management-system", name: "Production Management System", tools: [], useCases: [], data: [] },
+  { id: "production-systems", name: "Production Systems", tools: ["Airtable","Dreamweaver"], useCases: ["Production Timeline Management","Workflow Optimization"], data: [{"name":"Production Data","io":""},{"name":"Content File","io":"Input"},{"name":"Production Task","io":"Input"},{"name":"Production Schedule","io":"Output"},{"name":"Produced Content","io":"Output"}] },
+  { id: "professional-networking-system", name: "Professional Networking System", tools: [], useCases: [], data: [] },
+  { id: "project-management-system", name: "Project Management System", tools: ["TickTick","Microsoft Teams"], useCases: ["Task Management","Project Tracking"], data: [{"name":"Task Completion Data","io":""},{"name":"Project Progress","io":""},{"name":"Project Task","io":"Input"},{"name":"Milestone","io":"Input"},{"name":"Project Timeline","io":"Output"}] },
+  { id: "project-reporting-system", name: "Project Reporting System", tools: [], useCases: [], data: [] },
+  { id: "real-estate-management-system", name: "Real Estate Management System", tools: [], useCases: [], data: [] },
+  { id: "relationship-engagement-system", name: "Relationship Engagement System", tools: [], useCases: [], data: [] },
+  { id: "reporting-system", name: "Reporting System", tools: ["Power Bi","Excel"], useCases: ["Data Analysis","Report Generation"], data: [{"name":"Business Metric","io":""},{"name":"Project Data","io":"Input"},{"name":"Business Data","io":"Input"},{"name":"Report","io":"Output"},{"name":"Data Visualization","io":"Output"}] },
+  { id: "sales-lead-generation-system", name: "Sales Lead Generation System", tools: ["Hubspot","Airtable"], useCases: ["Lead Generation","CRM Integration"], data: [{"name":"Lead Data","io":""},{"name":"Crm Entry","io":"Output"},{"name":"Sales Lead","io":"Input"},{"name":"Client Information","io":"Input"},{"name":"Generated Lead","io":"Output"}] },
+  { id: "sleep-routine-system", name: "Sleep Routine System", tools: [], useCases: [], data: [] },
+  { id: "social-tracking-system", name: "Social Tracking System", tools: ["Hootsuite","Airtable"], useCases: ["Social Media Management","Engagement Tracking"], data: [{"name":"Social Media Metric","io":""},{"name":"Engagement Data","io":"Input"},{"name":"Social Media Post","io":"Input"},{"name":"Engagement Report","io":"Output"},{"name":"Social Media Analytic","io":"Output"}] },
+  { id: "socially-responsible-content-system", name: "Socially Responsible Content System", tools: [], useCases: [], data: [] },
+  { id: "stockholders-management-system", name: "Stockholders Management System", tools: [], useCases: [], data: [] },
+  { id: "task-management-system", name: "Task Management System", tools: [], useCases: [], data: [] },
+  { id: "thought-processing-system", name: "Thought Processing System", tools: [], useCases: [], data: [] },
+  { id: "tool-integration-hub", name: "Tool Integration Hub", tools: ["Make.Com","Airtable"], useCases: ["API Integration","Workflow Automation"], data: [{"name":"Api Call","io":"Input"},{"name":"Workflow","io":""},{"name":"Tool Access","io":"Input"},{"name":"Automated Workflow","io":"Output"},{"name":"Synced Data","io":"Output"}] },
+  { id: "tool-integration-system", name: "Tool Integration System", tools: [], useCases: [], data: [] },
+  { id: "video-chat-system", name: "Video Chat System", tools: ["Microsoft Teams","Zoom"], useCases: ["Virtual Meetings","Webinars"], data: [{"name":"Meeting Data","io":""},{"name":"Participant Record","io":""},{"name":"Participant Data","io":"Input"},{"name":"Meeting Invite","io":"Input"},{"name":"Transcript","io":"Output"},{"name":"Meeting Recording","io":"Output"}] },
+  { id: "video-communication-system", name: "Video Communication System", tools: [], useCases: [], data: [] },
+  { id: "wealth-building-system", name: "Wealth Building System", tools: [], useCases: [], data: [] },
+  { id: "wealth-management-system", name: "Wealth Management System", tools: ["Microsoft Money","Excel"], useCases: ["Budgeting","Investment Tracking"], data: [{"name":"Financial Data","io":"Input"},{"name":"Investment Record","io":"Input"},{"name":"Financial Report","io":"Output"},{"name":"Investment Summary","io":"Output"}] },
+  { id: "writing-management-system", name: "Writing Management System", tools: ["Microsoft Word","Dreamweaver"], useCases: ["Content Organization","Drafting"], data: [{"name":"Article","io":"Input"},{"name":"Content Metadata","io":""},{"name":"Content Idea","io":"Input"},{"name":"Completed Article","io":"Output"},{"name":"Draft","io":"Output"}] },
 ];
 
 function distinctTools() { return [...new Set(SYSTEMS.flatMap(s => s.tools))].sort(); }
@@ -272,7 +272,7 @@ function renderSystemDetail(id) {
 
   section("Tools", system.tools, t => t, t => `#/tool/${encodeURIComponent(t)}`);
   section("Use Cases", system.useCases, uc => uc, uc => `#/use-case/${encodeURIComponent(uc)}`);
-  section("Data", system.data, d => `${d.name}${tagHtml(d.io, d.io === "Input" ? "io-input" : "io-output")}`, d => `#/datum/${encodeURIComponent(d.name)}`);
+  section("Data", system.data, d => `${d.name}${(d.io ? tagHtml(d.io, d.io === "Input" ? "io-input" : "io-output") : "")}`, d => `#/datum/${encodeURIComponent(d.name)}`);
 }
 
 function renderXrefDetail(kind, name, systemsFinder) {
@@ -363,7 +363,7 @@ function renderUseCasesList() {
 }
 
 function renderDataList() {
-  xrefList("Data", distinctData(), d => `${d.name}${tagHtml(d.io, d.io === "Input" ? "io-input" : "io-output")}`, d => `#/datum/${encodeURIComponent(d.name)}`, d => systemsUsingData(d.name));
+  xrefList("Data", distinctData(), d => `${d.name}${(d.io ? tagHtml(d.io, d.io === "Input" ? "io-input" : "io-output") : "")}`, d => `#/datum/${encodeURIComponent(d.name)}`, d => systemsUsingData(d.name));
 }
 
 [...topNav.children].forEach(a => {
