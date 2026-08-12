@@ -43,13 +43,36 @@
   .empty { color: var(--text-dim); font-style: italic; font-size: .88rem; padding: .3rem 0; }
   footer { margin-top: 2.5rem; text-align: center; font-size: .78rem; color: var(--text-dim); }
   footer a { color: var(--text-dim); }
+
+  .edit-toolbar { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; font-size: .8rem; color: var(--text-dim); margin-bottom: 1rem; }
+  .btn { padding: .35rem .8rem; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: .8rem; cursor: pointer; }
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  .btn.primary { background: var(--accent); color: #fff; border-color: transparent; font-weight: 600; }
+  .btn.primary:hover { color: #fff; filter: brightness(1.08); }
+  .btn.danger:hover { border-color: #dc2626; color: #dc2626; }
+  .tag.edited { background: var(--accent-dim); color: var(--accent); border-color: transparent; }
+
+  .edit-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; margin-top: 1rem; }
+  .edit-field { margin-bottom: 1.1rem; }
+  .edit-field label { display: block; font-size: .78rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: .02em; margin-bottom: .4rem; }
+  .chip-list { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: .5rem; }
+  .chip { display: inline-flex; align-items: center; gap: .35rem; background: var(--bg); border: 1px solid var(--border); border-radius: 999px; padding: .2rem .5rem .2rem .75rem; font-size: .82rem; }
+  .chip .io-mini { font-size: .68rem; color: var(--text-dim); }
+  .chip button { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: .85rem; line-height: 1; padding: 0 .15rem; }
+  .chip button:hover { color: #dc2626; }
+  .add-row { display: flex; gap: .4rem; flex-wrap: wrap; }
+  .add-row input[type=text] { flex: 1; min-width: 140px; padding: .4rem .6rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg); color: var(--text); font-size: .85rem; }
+  .add-row select { padding: .4rem .5rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg); color: var(--text); font-size: .85rem; }
+  .edit-actions { display: flex; gap: .6rem; margin-top: 1rem; }
 </style>
 </head>
 <body>
 <div class="wrap">
   <h1>🗺️ Systems Catalog Explorer</h1>
   <p class="sub">Browse Kareem Bullard's personal systems catalog and follow its linked tools, use cases, and data flows.</p>
-  <div class="privacy-note">This is my real personal systems catalog. The systems come from my own Airtable workspace; the tool/use-case/data links are curated from the same catalog's vocabularies (94 tools, 176 use cases, 267 data items — raw exports in the repo's <code>data/</code> folder).</div>
+  <div class="privacy-note">This is my real personal systems catalog. The systems come from my own Airtable workspace; the tool/use-case/data links are curated from the same catalog's vocabularies (94 tools, 176 use cases, 267 data items — raw exports in the repo's <code>data/</code> folder). Click "Edit Links" on any system to add or remove connections — edits save to <em>your</em> browser only (<code>localStorage</code>); use Export below to hand changes back for syncing into Airtable.</div>
+
+  <div class="edit-toolbar" id="edit-toolbar"></div>
 
   <nav class="top" id="top-nav">
     <a data-route="systems">Systems</a>
@@ -143,17 +166,54 @@ const SYSTEMS = [
   { id: "writing-management-system", name: "Writing Management System", tools: ["Microsoft Word","Dreamweaver","Grammarly"], useCases: ["Content Organization","Drafting"], data: [{"name":"Article","io":"Input"},{"name":"Content Metadata","io":""},{"name":"Content Idea","io":"Input"},{"name":"Completed Article","io":"Output"},{"name":"Draft","io":"Output"}] },
 ];
 
-function distinctTools() { return [...new Set(SYSTEMS.flatMap(s => s.tools))].sort(); }
-function distinctUseCases() { return [...new Set(SYSTEMS.flatMap(s => s.useCases))].sort(); }
+// --- Local edits overlay ---
+// Static site, no backend: edits live in this browser's localStorage as a
+// per-system override layered on top of the baked-in SYSTEMS data. Export
+// them any time to hand back for syncing into the real Airtable source.
+const EDITS_KEY = "systems-catalog-explorer-web:edits";
+
+function loadEdits() {
+  try { return JSON.parse(localStorage.getItem(EDITS_KEY) || "{}"); } catch { return {}; }
+}
+function saveEdits(edits) { localStorage.setItem(EDITS_KEY, JSON.stringify(edits)); }
+function isEdited(id) { return !!loadEdits()[id]; }
+function setSystemEdit(id, patch) {
+  const edits = loadEdits();
+  edits[id] = { ...(edits[id] || {}), ...patch };
+  saveEdits(edits);
+}
+function clearSystemEdit(id) {
+  const edits = loadEdits();
+  delete edits[id];
+  saveEdits(edits);
+}
+function clearAllEdits() { saveEdits({}); }
+
+function effectiveSystems() {
+  const edits = loadEdits();
+  return SYSTEMS.map(s => {
+    const e = edits[s.id];
+    if (!e) return s;
+    return {
+      ...s,
+      tools: e.tools !== undefined ? e.tools : s.tools,
+      useCases: e.useCases !== undefined ? e.useCases : s.useCases,
+      data: e.data !== undefined ? e.data : s.data,
+    };
+  });
+}
+
+function distinctTools() { return [...new Set(effectiveSystems().flatMap(s => s.tools))].sort(); }
+function distinctUseCases() { return [...new Set(effectiveSystems().flatMap(s => s.useCases))].sort(); }
 function distinctData() {
   const map = new Map();
-  SYSTEMS.flatMap(s => s.data).forEach(d => map.set(d.name, d.io));
+  effectiveSystems().flatMap(s => s.data).forEach(d => map.set(d.name, d.io));
   return [...map.entries()].map(([name, io]) => ({ name, io })).sort((a, b) => a.name.localeCompare(b.name));
 }
 
-function systemsUsingTool(tool) { return SYSTEMS.filter(s => s.tools.includes(tool)); }
-function systemsUsingUseCase(uc) { return SYSTEMS.filter(s => s.useCases.includes(uc)); }
-function systemsUsingData(name) { return SYSTEMS.filter(s => s.data.some(d => d.name === name)); }
+function systemsUsingTool(tool) { return effectiveSystems().filter(s => s.tools.includes(tool)); }
+function systemsUsingUseCase(uc) { return effectiveSystems().filter(s => s.useCases.includes(uc)); }
+function systemsUsingData(name) { return effectiveSystems().filter(s => s.data.some(d => d.name === name)); }
 
 // --- Router ---
 const app = document.getElementById("app");
@@ -195,8 +255,9 @@ function render() {
 
 function renderSystemsList() {
   app.innerHTML = "";
+  const systems = effectiveSystems();
   const h1 = document.createElement("h2");
-  h1.innerHTML = `Systems <span class="count">(${SYSTEMS.length})</span>`;
+  h1.innerHTML = `Systems <span class="count">(${systems.length})</span>`;
   app.appendChild(h1);
 
   const search = document.createElement("input");
@@ -211,7 +272,7 @@ function renderSystemsList() {
   function draw() {
     const q = search.value.trim().toLowerCase();
     ul.innerHTML = "";
-    SYSTEMS.filter(s => !q || s.name.toLowerCase().includes(q)).forEach(s => {
+    systems.filter(s => !q || s.name.toLowerCase().includes(q)).forEach(s => {
       const li = document.createElement("li");
       li.className = "entity";
       const a = document.createElement("a");
@@ -219,6 +280,7 @@ function renderSystemsList() {
       a.addEventListener("click", () => { location.hash = `#/system/${s.id}`; });
       li.appendChild(a);
       li.insertAdjacentHTML("beforeend",
+        (isEdited(s.id) ? tagHtml("edited", "edited") : "") +
         tagHtml(`${s.tools.length} tools`) + tagHtml(`${s.useCases.length} use cases`) + tagHtml(`${s.data.length} data`)
       );
       ul.appendChild(li);
@@ -228,8 +290,8 @@ function renderSystemsList() {
   draw();
 }
 
-function renderSystemDetail(id) {
-  const system = SYSTEMS.find(s => s.id === id);
+function renderSystemDetail(id, editing) {
+  const system = effectiveSystems().find(s => s.id === id);
   app.innerHTML = "";
   if (!system) {
     app.innerHTML = `<p class="empty">System not found.</p>`;
@@ -244,9 +306,28 @@ function renderSystemDetail(id) {
   crumbs.appendChild(back);
   app.appendChild(crumbs);
 
+  const titleRow = document.createElement("div");
+  titleRow.style.display = "flex";
+  titleRow.style.justifyContent = "space-between";
+  titleRow.style.alignItems = "center";
+  titleRow.style.flexWrap = "wrap";
+  titleRow.style.gap = ".6rem";
   const h2 = document.createElement("h2");
+  h2.style.margin = "0";
   h2.textContent = system.name;
-  app.appendChild(h2);
+  if (isEdited(system.id)) h2.insertAdjacentHTML("beforeend", " " + tagHtml("edited", "edited"));
+  titleRow.appendChild(h2);
+
+  if (!editing) {
+    const editBtn = document.createElement("button");
+    editBtn.className = "btn";
+    editBtn.textContent = "✏️ Edit Links";
+    editBtn.addEventListener("click", () => renderSystemDetail(id, true));
+    titleRow.appendChild(editBtn);
+  }
+  app.appendChild(titleRow);
+
+  if (editing) return renderEditForm(system);
 
   function section(title, items, formatter, hrefFor) {
     const div = document.createElement("div");
@@ -274,6 +355,156 @@ function renderSystemDetail(id) {
   section("Tools", system.tools, t => t, t => `#/tool/${encodeURIComponent(t)}`);
   section("Use Cases", system.useCases, uc => uc, uc => `#/use-case/${encodeURIComponent(uc)}`);
   section("Data", system.data, d => `${d.name}${(d.io ? tagHtml(d.io, d.io === "Input" ? "io-input" : "io-output") : "")}`, d => `#/datum/${encodeURIComponent(d.name)}`);
+}
+
+function renderEditForm(system) {
+  let draftTools = system.tools.slice();
+  let draftUseCases = system.useCases.slice();
+  let draftData = system.data.map(d => ({ ...d }));
+
+  const panel = document.createElement("div");
+  panel.className = "edit-panel";
+  app.appendChild(panel);
+
+  // Datalists so the add-inputs autocomplete against every known name,
+  // but plain typed text is still accepted (not restricted to the list).
+  const toolOptions = [...new Set(SYSTEMS.flatMap(s => s.tools))].sort();
+  const ucOptions = [...new Set(SYSTEMS.flatMap(s => s.useCases))].sort();
+  const dataOptions = [...new Set(SYSTEMS.flatMap(s => s.data.map(d => d.name)))].sort();
+  const dlTools = document.createElement("datalist"); dlTools.id = "dl-tools";
+  toolOptions.forEach(t => dlTools.insertAdjacentHTML("beforeend", `<option value="${t}">`));
+  const dlUc = document.createElement("datalist"); dlUc.id = "dl-usecases";
+  ucOptions.forEach(t => dlUc.insertAdjacentHTML("beforeend", `<option value="${t}">`));
+  const dlData = document.createElement("datalist"); dlData.id = "dl-data";
+  dataOptions.forEach(t => dlData.insertAdjacentHTML("beforeend", `<option value="${t}">`));
+  panel.appendChild(dlTools); panel.appendChild(dlUc); panel.appendChild(dlData);
+
+  function chipListField(label, draftArrRef, getName, removeAt, datalistId, onAdd) {
+    const field = document.createElement("div");
+    field.className = "edit-field";
+    field.innerHTML = `<label>${label}</label>`;
+    const chips = document.createElement("div");
+    chips.className = "chip-list";
+    draftArrRef().forEach((item, idx) => {
+      const chip = document.createElement("span");
+      chip.className = "chip";
+      chip.innerHTML = `<span></span><button title="Remove">✕</button>`;
+      chip.querySelector("span").textContent = getName(item);
+      chip.querySelector("button").addEventListener("click", () => { removeAt(idx); rerenderPanel(); });
+      chips.appendChild(chip);
+    });
+    field.appendChild(chips);
+
+    const addRow = document.createElement("div");
+    addRow.className = "add-row";
+    const input = document.createElement("input");
+    input.type = "text";
+    input.placeholder = `Add ${label.toLowerCase().replace(/s$/, "")}…`;
+    input.setAttribute("list", datalistId);
+    const addBtn = document.createElement("button");
+    addBtn.className = "btn";
+    addBtn.textContent = "Add";
+    addBtn.type = "button";
+    addBtn.addEventListener("click", () => { onAdd(input); });
+    input.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); onAdd(input); } });
+    addRow.appendChild(input);
+    addRow.appendChild(addBtn);
+    field.appendChild(addRow);
+    return field;
+  }
+
+  function rerenderPanel() {
+    panel.innerHTML = "";
+    panel.appendChild(dlTools); panel.appendChild(dlUc); panel.appendChild(dlData);
+
+    panel.appendChild(chipListField("Tools", () => draftTools, t => t, (idx) => draftTools.splice(idx, 1), "dl-tools", (input) => {
+      const v = input.value.trim();
+      if (v && !draftTools.includes(v)) draftTools.push(v);
+      input.value = "";
+      rerenderPanel();
+    }));
+
+    panel.appendChild(chipListField("Use Cases", () => draftUseCases, uc => uc, (idx) => draftUseCases.splice(idx, 1), "dl-usecases", (input) => {
+      const v = input.value.trim();
+      if (v && !draftUseCases.includes(v)) draftUseCases.push(v);
+      input.value = "";
+      rerenderPanel();
+    }));
+
+    // Data field: name + Input/Output, added as its own row (io picked before Add).
+    const dataField = document.createElement("div");
+    dataField.className = "edit-field";
+    dataField.innerHTML = `<label>Data</label>`;
+    const chips = document.createElement("div");
+    chips.className = "chip-list";
+    draftData.forEach((d, idx) => {
+      const chip = document.createElement("span");
+      chip.className = "chip";
+      chip.innerHTML = `<span></span>${d.io ? `<span class="io-mini">${d.io}</span>` : ""}<button title="Remove">✕</button>`;
+      chip.querySelector("span").textContent = d.name;
+      chip.querySelector("button").addEventListener("click", () => { draftData.splice(idx, 1); rerenderPanel(); });
+      chips.appendChild(chip);
+    });
+    dataField.appendChild(chips);
+    const dataAddRow = document.createElement("div");
+    dataAddRow.className = "add-row";
+    const dataInput = document.createElement("input");
+    dataInput.type = "text";
+    dataInput.placeholder = "Add data item…";
+    dataInput.setAttribute("list", "dl-data");
+    const ioSelect = document.createElement("select");
+    ioSelect.innerHTML = `<option value="">— no I/O —</option><option value="Input">Input</option><option value="Output">Output</option>`;
+    const dataAddBtn = document.createElement("button");
+    dataAddBtn.className = "btn";
+    dataAddBtn.type = "button";
+    dataAddBtn.textContent = "Add";
+    function addDataItem() {
+      const v = dataInput.value.trim();
+      if (v && !draftData.some(d => d.name === v)) draftData.push({ name: v, io: ioSelect.value });
+      dataInput.value = "";
+      rerenderPanel();
+    }
+    dataAddBtn.addEventListener("click", addDataItem);
+    dataInput.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); addDataItem(); } });
+    dataAddRow.appendChild(dataInput);
+    dataAddRow.appendChild(ioSelect);
+    dataAddRow.appendChild(dataAddBtn);
+    dataField.appendChild(dataAddRow);
+    panel.appendChild(dataField);
+
+    const actions = document.createElement("div");
+    actions.className = "edit-actions";
+    const saveBtn = document.createElement("button");
+    saveBtn.className = "btn primary";
+    saveBtn.textContent = "Save";
+    saveBtn.addEventListener("click", () => {
+      setSystemEdit(system.id, { tools: draftTools, useCases: draftUseCases, data: draftData });
+      renderEditToolbar();
+      renderSystemDetail(system.id, false);
+    });
+    const cancelBtn = document.createElement("button");
+    cancelBtn.className = "btn";
+    cancelBtn.textContent = "Cancel";
+    cancelBtn.addEventListener("click", () => renderSystemDetail(system.id, false));
+    actions.appendChild(saveBtn);
+    actions.appendChild(cancelBtn);
+    if (isEdited(system.id)) {
+      const resetBtn = document.createElement("button");
+      resetBtn.className = "btn danger";
+      resetBtn.textContent = "Reset to Original";
+      resetBtn.addEventListener("click", () => {
+        if (confirm("Discard your local edits for this system and revert to the original data?")) {
+          clearSystemEdit(system.id);
+          renderEditToolbar();
+          renderSystemDetail(system.id, false);
+        }
+      });
+      actions.appendChild(resetBtn);
+    }
+    panel.appendChild(actions);
+  }
+
+  rerenderPanel();
 }
 
 function renderXrefDetail(kind, name, systemsFinder) {
@@ -371,7 +602,77 @@ function renderDataList() {
   a.addEventListener("click", () => { location.hash = "#/" + a.dataset.route; });
 });
 
+// --- Global edit toolbar: export/import/reset the local edits overlay ---
+function renderEditToolbar() {
+  const toolbar = document.getElementById("edit-toolbar");
+  const edits = loadEdits();
+  const count = Object.keys(edits).length;
+  toolbar.innerHTML = "";
+
+  const countSpan = document.createElement("span");
+  countSpan.textContent = count ? `${count} system${count === 1 ? "" : "s"} edited locally` : "No local edits yet";
+  toolbar.appendChild(countSpan);
+
+  const exportBtn = document.createElement("button");
+  exportBtn.className = "btn";
+  exportBtn.textContent = "Export Edits";
+  exportBtn.addEventListener("click", () => {
+    const blob = new Blob([JSON.stringify(loadEdits(), null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "systems-catalog-edits.json";
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+  toolbar.appendChild(exportBtn);
+
+  const importBtn = document.createElement("button");
+  importBtn.className = "btn";
+  importBtn.textContent = "Import Edits";
+  const importInput = document.createElement("input");
+  importInput.type = "file";
+  importInput.accept = "application/json";
+  importInput.style.display = "none";
+  importBtn.addEventListener("click", () => importInput.click());
+  importInput.addEventListener("change", () => {
+    const file = importInput.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const data = JSON.parse(reader.result);
+        if (typeof data !== "object" || Array.isArray(data)) throw new Error("bad shape");
+        saveEdits(data);
+        renderEditToolbar();
+        render();
+      } catch {
+        alert("Could not import that file — expected the JSON produced by Export Edits.");
+      }
+      importInput.value = "";
+    };
+    reader.readAsText(file);
+  });
+  toolbar.appendChild(importBtn);
+  toolbar.appendChild(importInput);
+
+  if (count) {
+    const resetAllBtn = document.createElement("button");
+    resetAllBtn.className = "btn danger";
+    resetAllBtn.textContent = "Reset All Edits";
+    resetAllBtn.addEventListener("click", () => {
+      if (confirm(`Discard all ${count} local edit(s) and revert every system to the original data?`)) {
+        clearAllEdits();
+        renderEditToolbar();
+        render();
+      }
+    });
+    toolbar.appendChild(resetAllBtn);
+  }
+}
+
 window.addEventListener("hashchange", render);
+renderEditToolbar();
 render();
 </script>
 </body>
