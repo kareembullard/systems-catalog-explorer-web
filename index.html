@@ -73,7 +73,7 @@
 <div class="wrap">
   <h1>🗺️ Systems Catalog Explorer</h1>
   <p class="sub">Browse Kareem Bullard's personal systems catalog and follow its linked tools, use cases, and data flows.</p>
-  <div class="privacy-note">This is my real personal systems catalog. The systems come from my own Airtable workspace; the tool/use-case/data links are curated from the same catalog's vocabularies (94 tools, 176 use cases, 267 data items — raw exports in the repo's <code>data/</code> folder). Click "Edit Links" on any system to add or remove connections — edits save to <em>your</em> browser only (<code>localStorage</code>); use Export below to hand changes back for syncing into Airtable.</div>
+  <div class="privacy-note">This is my real personal systems catalog. The systems come from my own Airtable workspace; the tool/use-case/data links are curated from the same catalog's vocabularies (94 tools, 176 use cases, 267 data items — raw exports in the repo's <code>data/</code> folder). Every System, Tool, Use Case, and Data page has an "Edit" button to add/remove/rename connections — Systems edit their linked Tools/Use Cases/Data; Tools/Use Cases/Data can also link <em>directly</em> to each other (independent of any system — not in the real Airtable data, purely a local layer for me to sketch relationships). Edits save to <em>your</em> browser only (<code>localStorage</code>); use Export below to hand changes back for syncing into Airtable.</div>
 
   <div class="edit-toolbar" id="edit-toolbar"></div>
 
@@ -228,6 +228,15 @@ function parseRoute() {
   return parts.length ? parts : ["systems"];
 }
 
+// Leaving edit mode always means changing the hash (edit mode is its own
+// route, .../edit) so it stays a real, back-button-able navigation step.
+// The equality check is just a safety net for the rare case the target
+// already matches (e.g. renamed back to the same name).
+function goToNonEdit(targetHash) {
+  if (targetHash === location.hash) render();
+  else location.hash = targetHash;
+}
+
 function navLink(label, onClick) {
   const a = document.createElement("a");
   a.textContent = label;
@@ -246,13 +255,13 @@ function render() {
   [...topNav.children].forEach(a => a.classList.toggle("active", a.dataset.route === route));
 
   if (route === "systems" && parts.length === 1) return renderSystemsList();
-  if (route === "system" && parts[1]) return renderSystemDetail(decodeURIComponent(parts[1]));
+  if (route === "system" && parts[1]) return renderSystemDetail(decodeURIComponent(parts[1]), parts[2] === "edit");
   if (route === "tools" && parts.length === 1) return renderToolsList();
-  if (route === "tool" && parts[1]) return renderXrefDetail("Tool", decodeURIComponent(parts[1]), systemsUsingTool, false);
+  if (route === "tool" && parts[1]) return renderXrefDetail("Tool", decodeURIComponent(parts[1]), systemsUsingTool, parts[2] === "edit");
   if (route === "use-cases" && parts.length === 1) return renderUseCasesList();
-  if (route === "use-case" && parts[1]) return renderXrefDetail("Use Case", decodeURIComponent(parts[1]), systemsUsingUseCase, false);
+  if (route === "use-case" && parts[1]) return renderXrefDetail("Use Case", decodeURIComponent(parts[1]), systemsUsingUseCase, parts[2] === "edit");
   if (route === "data" && parts.length === 1) return renderDataList();
-  if (route === "datum" && parts[1]) return renderXrefDetail("Data", decodeURIComponent(parts[1]), systemsUsingData, false);
+  if (route === "datum" && parts[1]) return renderXrefDetail("Data", decodeURIComponent(parts[1]), systemsUsingData, parts[2] === "edit");
   renderSystemsList();
 }
 
@@ -325,7 +334,7 @@ function renderSystemDetail(id, editing) {
     const editBtn = document.createElement("button");
     editBtn.className = "btn";
     editBtn.textContent = "✏️ Edit Links";
-    editBtn.addEventListener("click", () => renderSystemDetail(id, true));
+    editBtn.addEventListener("click", () => { location.hash = `#/system/${encodeURIComponent(id)}/edit`; });
     titleRow.appendChild(editBtn);
   }
   app.appendChild(titleRow);
@@ -483,12 +492,12 @@ function renderEditForm(system) {
     saveBtn.addEventListener("click", () => {
       setSystemEdit(system.id, { tools: draftTools, useCases: draftUseCases, data: draftData });
       renderEditToolbar();
-      renderSystemDetail(system.id, false);
+      goToNonEdit(`#/system/${encodeURIComponent(system.id)}`);
     });
     const cancelBtn = document.createElement("button");
     cancelBtn.className = "btn";
     cancelBtn.textContent = "Cancel";
-    cancelBtn.addEventListener("click", () => renderSystemDetail(system.id, false));
+    cancelBtn.addEventListener("click", () => goToNonEdit(`#/system/${encodeURIComponent(system.id)}`));
     actions.appendChild(saveBtn);
     actions.appendChild(cancelBtn);
     if (isEdited(system.id)) {
@@ -499,7 +508,7 @@ function renderEditForm(system) {
         if (confirm("Discard your local edits for this system and revert to the original data?")) {
           clearSystemEdit(system.id);
           renderEditToolbar();
-          renderSystemDetail(system.id, false);
+          goToNonEdit(`#/system/${encodeURIComponent(system.id)}`);
         }
       });
       actions.appendChild(resetBtn);
@@ -511,10 +520,78 @@ function renderEditForm(system) {
 }
 
 const KIND_CONFIG = {
-  "Tool": { field: "tools", listRoute: "tools", detailRoute: "tool" },
-  "Use Case": { field: "useCases", listRoute: "use-cases", detailRoute: "use-case" },
-  "Data": { field: "data", listRoute: "data", detailRoute: "datum", isData: true },
+  "Tool": { field: "tools", listRoute: "tools", detailRoute: "tool", peers: ["Use Case", "Data"] },
+  "Use Case": { field: "useCases", listRoute: "use-cases", detailRoute: "use-case", peers: ["Tool", "Data"] },
+  "Data": { field: "data", listRoute: "data", detailRoute: "datum", isData: true, peers: ["Tool", "Use Case"] },
 };
+const PEER_LABEL = { "Tool": "Tools", "Use Case": "Use Cases", "Data": "Data" };
+
+// --- Direct Tool↔Use Case↔Data cross-links ---
+// These three kinds aren't directly linked in the real Airtable data — only
+// via which Systems use them (that's what setSystemEdit/effectiveSystems
+// handle above). This is a separate, purely local-only layer: a hand-drawn
+// "these go together" graph between Tools/Use Cases/Data, independent of
+// any system. Stored as undirected edges per kind-pair, canonicalized by
+// PAIR_ORDER so a Tool↔Data edge is always stored the same way regardless
+// of which side you edited it from.
+const CROSSLINKS_KEY = "systems-catalog-explorer-web:crosslinks";
+const PAIR_ORDER = ["Tool", "Use Case", "Data"];
+
+function pairKey(kindA, kindB) {
+  return [kindA, kindB].sort((x, y) => PAIR_ORDER.indexOf(x) - PAIR_ORDER.indexOf(y)).join("|");
+}
+function loadCrossLinks() {
+  try { return JSON.parse(localStorage.getItem(CROSSLINKS_KEY) || "{}"); } catch { return {}; }
+}
+function saveCrossLinks(cl) { localStorage.setItem(CROSSLINKS_KEY, JSON.stringify(cl)); }
+function crossLinkEdgeCount() {
+  const cl = loadCrossLinks();
+  return Object.values(cl).reduce((sum, list) => sum + (list ? list.length : 0), 0);
+}
+function getCrossLinks(kind, name, peerKind) {
+  const key = pairKey(kind, peerKind);
+  const firstKind = key.split("|")[0];
+  const list = loadCrossLinks()[key] || [];
+  const side = kind === firstKind ? 0 : 1;
+  return list.filter(p => p[side] === name).map(p => p[1 - side]);
+}
+function setCrossLinks(kind, name, peerKind, newPeerNames) {
+  const key = pairKey(kind, peerKind);
+  const firstKind = key.split("|")[0];
+  const clAll = loadCrossLinks();
+  const list = clAll[key] || [];
+  const side = kind === firstKind ? 0 : 1;
+  const kept = list.filter(p => p[side] !== name);
+  const added = newPeerNames.map(p => (side === 0 ? [name, p] : [p, name]));
+  clAll[key] = [...kept, ...added];
+  saveCrossLinks(clAll);
+}
+function renameInCrossLinks(kind, oldName, newName) {
+  if (oldName === newName) return;
+  const clAll = loadCrossLinks();
+  Object.keys(clAll).forEach(key => {
+    const [k1, k2] = key.split("|");
+    if (k1 !== kind && k2 !== kind) return;
+    const side = k1 === kind ? 0 : 1;
+    const renamed = (clAll[key] || []).map(p => {
+      if (p[side] !== oldName) return p;
+      const np = p.slice(); np[side] = newName; return np;
+    });
+    const seen = new Set();
+    clAll[key] = renamed.filter(p => {
+      const k = p.join(" ");
+      if (seen.has(k)) return false;
+      seen.add(k); return true;
+    });
+  });
+  saveCrossLinks(clAll);
+}
+
+function namesForKind(kind) {
+  if (kind === "Tool") return distinctTools();
+  if (kind === "Use Case") return distinctUseCases();
+  return distinctData().map(d => d.name);
+}
 
 function renderXrefDetail(kind, name, systemsFinder, editing) {
   app.innerHTML = "";
@@ -542,7 +619,7 @@ function renderXrefDetail(kind, name, systemsFinder, editing) {
     const editBtn = document.createElement("button");
     editBtn.className = "btn";
     editBtn.textContent = "✏️ Edit";
-    editBtn.addEventListener("click", () => renderXrefDetail(kind, name, systemsFinder, true));
+    editBtn.addEventListener("click", () => { location.hash = `#/${cfg.detailRoute}/${encodeURIComponent(name)}/edit`; });
     titleRow.appendChild(editBtn);
   }
   app.appendChild(titleRow);
@@ -570,6 +647,31 @@ function renderXrefDetail(kind, name, systemsFinder, editing) {
     div.appendChild(ul);
   }
   app.appendChild(div);
+
+  cfg.peers.forEach(peerKind => {
+    const peerCfg = KIND_CONFIG[peerKind];
+    const peerNames = getCrossLinks(kind, name, peerKind);
+    const pdiv = document.createElement("div");
+    pdiv.className = "section";
+    pdiv.innerHTML = `<h2>Linked ${PEER_LABEL[peerKind]} (${peerNames.length})</h2>`;
+    if (!peerNames.length) {
+      pdiv.innerHTML += `<p class="empty">No direct ${PEER_LABEL[peerKind].toLowerCase()} links yet — these are hand-drawn, separate from the system-derived data above.</p>`;
+    } else {
+      const pul = document.createElement("ul");
+      pul.className = "entities";
+      peerNames.slice().sort().forEach(pn => {
+        const li = document.createElement("li");
+        li.className = "entity";
+        const a = document.createElement("a");
+        a.textContent = pn;
+        a.addEventListener("click", () => { location.hash = `#/${peerCfg.detailRoute}/${encodeURIComponent(pn)}`; });
+        li.appendChild(a);
+        pul.appendChild(li);
+      });
+      pdiv.appendChild(pul);
+    }
+    app.appendChild(pdiv);
+  });
 }
 
 // Editing a Tool/Use Case/Data entity means editing every system that
@@ -634,6 +736,40 @@ function renderXrefEditForm(kind, name, systemsFinder) {
   listField.appendChild(checklist);
   panel.appendChild(listField);
 
+  // Direct cross-links to the other two kinds — separate from the system
+  // checklist above, purely local, no I/O concept (that's a system-data
+  // property, not a property of a standalone Tool/Use Case/Data pairing).
+  const peerCheckedSets = {};
+  cfg.peers.forEach(peerKind => {
+    const peerNames = namesForKind(peerKind).slice().sort();
+    const checked = new Set(getCrossLinks(kind, name, peerKind));
+    peerCheckedSets[peerKind] = checked;
+
+    const peerField = document.createElement("div");
+    peerField.className = "edit-field";
+    peerField.innerHTML = `<label>Linked ${PEER_LABEL[peerKind]} (${checked.size} of ${peerNames.length}) — direct link, no system required</label>`;
+    const peerChecklist = document.createElement("div");
+    peerChecklist.className = "checklist";
+    if (!peerNames.length) {
+      peerChecklist.innerHTML = `<p class="empty">No ${PEER_LABEL[peerKind].toLowerCase()} exist in the catalog yet.</p>`;
+    } else {
+      peerNames.forEach(pn => {
+        const label = document.createElement("label");
+        const cb = document.createElement("input");
+        cb.type = "checkbox";
+        cb.checked = checked.has(pn);
+        cb.addEventListener("change", () => {
+          if (cb.checked) checked.add(pn); else checked.delete(pn);
+        });
+        label.appendChild(cb);
+        label.appendChild(document.createTextNode(pn));
+        peerChecklist.appendChild(label);
+      });
+    }
+    peerField.appendChild(peerChecklist);
+    panel.appendChild(peerField);
+  });
+
   const actions = document.createElement("div");
   actions.className = "edit-actions";
   const saveBtn = document.createElement("button");
@@ -668,15 +804,18 @@ function renderXrefEditForm(kind, name, systemsFinder) {
       }
     });
 
+    if (newName !== name) renameInCrossLinks(kind, name, newName);
+    cfg.peers.forEach(peerKind => {
+      setCrossLinks(kind, newName, peerKind, [...peerCheckedSets[peerKind]]);
+    });
+
     renderEditToolbar();
-    const targetHash = `#/${cfg.detailRoute}/${encodeURIComponent(newName)}`;
-    if (targetHash === location.hash) render();
-    else location.hash = targetHash;
+    goToNonEdit(`#/${cfg.detailRoute}/${encodeURIComponent(newName)}`);
   });
   const cancelBtn = document.createElement("button");
   cancelBtn.className = "btn";
   cancelBtn.textContent = "Cancel";
-  cancelBtn.addEventListener("click", () => renderXrefDetail(kind, name, systemsFinder, false));
+  cancelBtn.addEventListener("click", () => goToNonEdit(`#/${cfg.detailRoute}/${encodeURIComponent(name)}`));
   actions.appendChild(saveBtn);
   actions.appendChild(cancelBtn);
   panel.appendChild(actions);
@@ -739,22 +878,27 @@ function renderDataList() {
   a.addEventListener("click", () => { location.hash = "#/" + a.dataset.route; });
 });
 
-// --- Global edit toolbar: export/import/reset the local edits overlay ---
+// --- Global edit toolbar: export/import/reset both local-edit layers
+// (system-level overlay + the direct Tool/Use Case/Data cross-links) ---
 function renderEditToolbar() {
   const toolbar = document.getElementById("edit-toolbar");
-  const edits = loadEdits();
-  const count = Object.keys(edits).length;
+  const systemCount = Object.keys(loadEdits()).length;
+  const crossCount = crossLinkEdgeCount();
   toolbar.innerHTML = "";
 
   const countSpan = document.createElement("span");
-  countSpan.textContent = count ? `${count} system${count === 1 ? "" : "s"} edited locally` : "No local edits yet";
+  const parts = [];
+  if (systemCount) parts.push(`${systemCount} system${systemCount === 1 ? "" : "s"} edited`);
+  if (crossCount) parts.push(`${crossCount} direct link${crossCount === 1 ? "" : "s"}`);
+  countSpan.textContent = parts.length ? parts.join(", ") + " locally" : "No local edits yet";
   toolbar.appendChild(countSpan);
 
   const exportBtn = document.createElement("button");
   exportBtn.className = "btn";
   exportBtn.textContent = "Export Edits";
   exportBtn.addEventListener("click", () => {
-    const blob = new Blob([JSON.stringify(loadEdits(), null, 2)], { type: "application/json" });
+    const payload = { edits: loadEdits(), crossLinks: loadCrossLinks() };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -780,7 +924,14 @@ function renderEditToolbar() {
       try {
         const data = JSON.parse(reader.result);
         if (typeof data !== "object" || Array.isArray(data)) throw new Error("bad shape");
-        saveEdits(data);
+        // Accept both the current {edits, crossLinks} export shape and the
+        // older plain systemId-keyed shape (edits only, no cross-links).
+        if (data.edits || data.crossLinks) {
+          saveEdits(data.edits || {});
+          saveCrossLinks(data.crossLinks || {});
+        } else {
+          saveEdits(data);
+        }
         renderEditToolbar();
         render();
       } catch {
@@ -793,13 +944,14 @@ function renderEditToolbar() {
   toolbar.appendChild(importBtn);
   toolbar.appendChild(importInput);
 
-  if (count) {
+  if (systemCount || crossCount) {
     const resetAllBtn = document.createElement("button");
     resetAllBtn.className = "btn danger";
     resetAllBtn.textContent = "Reset All Edits";
     resetAllBtn.addEventListener("click", () => {
-      if (confirm(`Discard all ${count} local edit(s) and revert every system to the original data?`)) {
+      if (confirm("Discard all local edits — system links and direct Tool/Use Case/Data links — and revert everything to the original data?")) {
         clearAllEdits();
+        saveCrossLinks({});
         renderEditToolbar();
         render();
       }
