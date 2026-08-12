@@ -11,7 +11,7 @@ A static, single-file web app version of [systems-catalog-explorer](https://gith
 - Shows my **actual systems catalog** — 72 systems exported from my Airtable workspace, published deliberately
 - Runs as a client-side single-page app with hash-based routing (`#/systems`, `#/system/<id>`, `#/tools`, `#/use-cases`, `#/data`) instead of a Flask backend — GitHub Pages only serves static files, so there's no server to route through
 - Cross-links everything in both directions: a system page links to each of its tools/use cases/data items, and each of those has its own page listing every system that uses it
-- **Editable links**: each system page has an "Edit Links" button to add/remove tools, use cases, and data items. Edits save to *your* browser's `localStorage` as an overlay on top of the baked-in data — they don't touch the source files. Export/Import buttons at the top of the page let you back up edits or hand them off (to me, to sync into the real Airtable base)
+- **Editable links, from either direction**: a system page has an "Edit Links" button to add/remove its tools, use cases, and data items. A tool/use-case/data page has its own "Edit" button — rename it everywhere it's used, or toggle a checklist of every system it should link to. Edits save to *your* browser's `localStorage` as an overlay on top of the baked-in data — they don't touch the source files. Export/Import buttons at the top of the page let you back up edits or hand them off (to me, to sync into the real Airtable base)
 - Makes no network calls
 
 ## Where the data comes from

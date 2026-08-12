@@ -64,6 +64,9 @@
   .add-row input[type=text] { flex: 1; min-width: 140px; padding: .4rem .6rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg); color: var(--text); font-size: .85rem; }
   .add-row select { padding: .4rem .5rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg); color: var(--text); font-size: .85rem; }
   .edit-actions { display: flex; gap: .6rem; margin-top: 1rem; }
+  .checklist { max-height: 320px; overflow-y: auto; border: 1px solid var(--border); border-radius: var(--radius); padding: .5rem .7rem; background: var(--bg); }
+  .checklist label { display: flex; align-items: center; gap: .5rem; font-size: .86rem; padding: .3rem 0; text-transform: none; letter-spacing: normal; color: var(--text); }
+  .edit-field input[type=text] { width: 100%; padding: .5rem .7rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg); color: var(--text); font-size: .9rem; margin-bottom: .3rem; }
 </style>
 </head>
 <body>
@@ -245,11 +248,11 @@ function render() {
   if (route === "systems" && parts.length === 1) return renderSystemsList();
   if (route === "system" && parts[1]) return renderSystemDetail(decodeURIComponent(parts[1]));
   if (route === "tools" && parts.length === 1) return renderToolsList();
-  if (route === "tool" && parts[1]) return renderXrefDetail("Tool", decodeURIComponent(parts[1]), systemsUsingTool);
+  if (route === "tool" && parts[1]) return renderXrefDetail("Tool", decodeURIComponent(parts[1]), systemsUsingTool, false);
   if (route === "use-cases" && parts.length === 1) return renderUseCasesList();
-  if (route === "use-case" && parts[1]) return renderXrefDetail("Use Case", decodeURIComponent(parts[1]), systemsUsingUseCase);
+  if (route === "use-case" && parts[1]) return renderXrefDetail("Use Case", decodeURIComponent(parts[1]), systemsUsingUseCase, false);
   if (route === "data" && parts.length === 1) return renderDataList();
-  if (route === "datum" && parts[1]) return renderXrefDetail("Data", decodeURIComponent(parts[1]), systemsUsingData);
+  if (route === "datum" && parts[1]) return renderXrefDetail("Data", decodeURIComponent(parts[1]), systemsUsingData, false);
   renderSystemsList();
 }
 
@@ -507,20 +510,44 @@ function renderEditForm(system) {
   rerenderPanel();
 }
 
-function renderXrefDetail(kind, name, systemsFinder) {
+const KIND_CONFIG = {
+  "Tool": { field: "tools", listRoute: "tools", detailRoute: "tool" },
+  "Use Case": { field: "useCases", listRoute: "use-cases", detailRoute: "use-case" },
+  "Data": { field: "data", listRoute: "data", detailRoute: "datum", isData: true },
+};
+
+function renderXrefDetail(kind, name, systemsFinder, editing) {
   app.innerHTML = "";
+  const cfg = KIND_CONFIG[kind];
   const crumbs = document.createElement("nav");
   crumbs.className = "crumbs";
-  const routeMap = { Tool: "tools", "Use Case": "use-cases", Data: "data" };
   const back = document.createElement("a");
   back.textContent = `← ${kind}s`;
-  back.addEventListener("click", () => { location.hash = `#/${routeMap[kind]}`; });
+  back.addEventListener("click", () => { location.hash = `#/${cfg.listRoute}`; });
   crumbs.appendChild(back);
   app.appendChild(crumbs);
 
+  const titleRow = document.createElement("div");
+  titleRow.style.display = "flex";
+  titleRow.style.justifyContent = "space-between";
+  titleRow.style.alignItems = "center";
+  titleRow.style.flexWrap = "wrap";
+  titleRow.style.gap = ".6rem";
   const h2 = document.createElement("h2");
+  h2.style.margin = "0";
   h2.textContent = name;
-  app.appendChild(h2);
+  titleRow.appendChild(h2);
+
+  if (!editing) {
+    const editBtn = document.createElement("button");
+    editBtn.className = "btn";
+    editBtn.textContent = "✏️ Edit";
+    editBtn.addEventListener("click", () => renderXrefDetail(kind, name, systemsFinder, true));
+    titleRow.appendChild(editBtn);
+  }
+  app.appendChild(titleRow);
+
+  if (editing) return renderXrefEditForm(kind, name, systemsFinder);
 
   const systems = systemsFinder(name);
   const div = document.createElement("div");
@@ -543,6 +570,116 @@ function renderXrefDetail(kind, name, systemsFinder) {
     div.appendChild(ul);
   }
   app.appendChild(div);
+}
+
+// Editing a Tool/Use Case/Data entity means editing every system that
+// references it: rename replaces the name in each linked system's array,
+// and the checklist below adds/removes this item from each system's link
+// list. Same localStorage overlay as system-level editing (setSystemEdit).
+function renderXrefEditForm(kind, name, systemsFinder) {
+  const cfg = KIND_CONFIG[kind];
+  const allSystems = effectiveSystems().slice().sort((a, b) => a.name.localeCompare(b.name));
+  const checkedIds = new Set(systemsFinder(name).map(s => s.id));
+
+  let initialIo = "";
+  if (cfg.isData) {
+    for (const s of allSystems) {
+      const d = s.data.find(d => d.name === name);
+      if (d) { initialIo = d.io || ""; break; }
+    }
+  }
+
+  const panel = document.createElement("div");
+  panel.className = "edit-panel";
+  app.appendChild(panel);
+
+  const nameField = document.createElement("div");
+  nameField.className = "edit-field";
+  nameField.innerHTML = `<label>Name</label>`;
+  const nameInput = document.createElement("input");
+  nameInput.type = "text";
+  nameInput.value = name;
+  nameField.appendChild(nameInput);
+  panel.appendChild(nameField);
+
+  let ioSelect = null;
+  if (cfg.isData) {
+    const ioField = document.createElement("div");
+    ioField.className = "edit-field";
+    ioField.innerHTML = `<label>Default I/O (used when linking to a new system)</label>`;
+    ioSelect = document.createElement("select");
+    ioSelect.innerHTML = `<option value="">— no I/O —</option><option value="Input">Input</option><option value="Output">Output</option>`;
+    ioSelect.value = initialIo;
+    ioField.appendChild(ioSelect);
+    panel.appendChild(ioField);
+  }
+
+  const listField = document.createElement("div");
+  listField.className = "edit-field";
+  listField.innerHTML = `<label>Linked Systems (${checkedIds.size} of ${allSystems.length})</label>`;
+  const checklist = document.createElement("div");
+  checklist.className = "checklist";
+  allSystems.forEach(s => {
+    const label = document.createElement("label");
+    const cb = document.createElement("input");
+    cb.type = "checkbox";
+    cb.checked = checkedIds.has(s.id);
+    cb.addEventListener("change", () => {
+      if (cb.checked) checkedIds.add(s.id); else checkedIds.delete(s.id);
+    });
+    label.appendChild(cb);
+    label.appendChild(document.createTextNode(s.name));
+    checklist.appendChild(label);
+  });
+  listField.appendChild(checklist);
+  panel.appendChild(listField);
+
+  const actions = document.createElement("div");
+  actions.className = "edit-actions";
+  const saveBtn = document.createElement("button");
+  saveBtn.className = "btn primary";
+  saveBtn.textContent = "Save";
+  saveBtn.addEventListener("click", () => {
+    const newName = nameInput.value.trim();
+    if (!newName) { alert("Name can't be empty."); return; }
+    const newIo = cfg.isData ? ioSelect.value : null;
+
+    allSystems.forEach(s => {
+      if (cfg.isData) {
+        const hadOld = s.data.some(d => d.name === name);
+        const oldEntry = s.data.find(d => d.name === name);
+        const wantsLinked = checkedIds.has(s.id);
+        const rest = s.data.filter(d => d.name !== name);
+        const newData = wantsLinked
+          ? [...rest, { name: newName, io: hadOld ? (oldEntry.io || "") : newIo }]
+          : rest;
+        const before = JSON.stringify(s.data.slice().sort((a, b) => a.name.localeCompare(b.name)));
+        const after = JSON.stringify(newData.slice().sort((a, b) => a.name.localeCompare(b.name)));
+        if (before !== after) setSystemEdit(s.id, { data: newData });
+      } else {
+        const field = cfg.field;
+        const hadOld = s[field].includes(name);
+        const wantsLinked = checkedIds.has(s.id);
+        const rest = s[field].filter(v => v !== name);
+        const newArr = wantsLinked ? [...rest, newName] : rest;
+        const before = JSON.stringify(s[field].slice().sort());
+        const after = JSON.stringify(newArr.slice().sort());
+        if (before !== after) setSystemEdit(s.id, { [field]: newArr });
+      }
+    });
+
+    renderEditToolbar();
+    const targetHash = `#/${cfg.detailRoute}/${encodeURIComponent(newName)}`;
+    if (targetHash === location.hash) render();
+    else location.hash = targetHash;
+  });
+  const cancelBtn = document.createElement("button");
+  cancelBtn.className = "btn";
+  cancelBtn.textContent = "Cancel";
+  cancelBtn.addEventListener("click", () => renderXrefDetail(kind, name, systemsFinder, false));
+  actions.appendChild(saveBtn);
+  actions.appendChild(cancelBtn);
+  panel.appendChild(actions);
 }
 
 function usedByLine(systems) {
